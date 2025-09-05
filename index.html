@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Interactive Quiz</title>
+  <style>
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #d6d6d6;
+      min-height: 100vh;
+      padding: 20px;
+      color: #232a34;
+    }
+
+    .main-container {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 40px;
+      margin-top: 20px;
+      flex-wrap: nowrap;
+    }
+
+    
+    .quiz-container,
+    .joke-container {
+      background: #f9f9f9;
+      width: 400px;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+      animation: fadeIn 0.8s ease;
+    }
+
+    h2 {
+      margin-bottom: 18px;
+      color: #009999;
+      font-size: 22px;
+      text-align: center;
+    }
+
+    h3 {
+      margin-bottom: 12px;
+      font-size: 18px;
+      color: #333;
+      animation: fadeSlide 0.5s ease;
+    }
+
+    .option {
+      display: block;
+      width: 100%;
+      margin: 8px 0;
+      background: #cfd8dc;
+      color: #232a34;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.25s, color 0.25s, transform 0.15s;
+      animation: fadeSlide 0.5s ease;
+    }
+
+    .option:hover:not(.selected):not(:disabled) {
+      background: #80cbc4;
+      transform: scale(1.02);
+    }
+
+    .option.selected {
+      background: #009999 !important;
+      color: #fff !important;
+      box-shadow: 0 0 0 2px #007777;
+    }
+
+    .option:disabled:not(.selected) {
+      background: #e0e0e0;
+      color: #777;
+      cursor: not-allowed;
+    }
+
+    
+    button {
+      margin-top: 15px;
+      padding: 10px;
+      width: 120px;
+      border: none;
+      border-radius: 6px;
+      background: #009999;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.25s, transform 0.15s;
+      animation: fadeIn 0.6s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: #007777;
+      transform: scale(1.05);
+    }
+
+    button:disabled {
+      background: #ccc;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    #result {
+      font-weight: bold;
+      margin-top: 15px;
+      color: #009999;
+      text-align: center;
+      animation: fadeIn 0.8s ease;
+    }
+
+    #jokeDisplay {
+      margin-top: 18px;
+      font-style: italic;
+      min-height: 80px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #eceff1;
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      animation: fadeSlide 0.7s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeSlide {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 850px) {
+      .main-container {
+        flex-wrap: wrap; 
+      }
+      .quiz-container,
+      .joke-container {
+        width: 100%;
+        max-width: 500px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <div class="quiz-container">
+      <h2>Web Development Quiz</h2>
+      <h3 id="question">Question text</h3>
+      <div id="options"></div>
+      <button id="nextBtn">Next</button>
+      <button id="submitBtn" style="display:none;">Submit</button>
+      <p id="result"></p>
+    </div>
+
+    <div class="joke-container">
+      <h2>Random Joke (API Demo)</h2>
+      <button id="getJokeBtn">Get a Joke</button>
+      <p id="jokeDisplay"></p>
+    </div>
+  </div>
+
+  <script>
+    const quizData = [
+      {
+        question: "Which language runs in a web browser?",
+        options: ["Python", "C++", "JavaScript", "Java"],
+        answer: "JavaScript"
+      },
+      {
+        question: "What does CSS stand for?",
+        options: [
+          "Cascading Style Sheets",
+          "Computer Style Sheets",
+          "Creative Style System",
+          "Colorful Style Sheets"
+        ],
+        answer: "Cascading Style Sheets"
+      },
+      {
+        question: "What does HTML stand for?",
+        options: [
+          "Hyper Text Markup Language",
+          "Hyper Tool Multi Language",
+          "Home Tool Markup Language",
+          "Hyper Transfer Markup Language"
+        ],
+        answer: "Hyper Text Markup Language"
+      },
+      {
+        question: "What year was JavaScript created?",
+        options: ["1995", "2000", "1990", "1985"],
+        answer: "1995"
+      },
+      {
+        question: "Which company developed JavaScript?",
+        options: ["Microsoft", "Netscape", "Google", "Apple"],
+        answer: "Netscape"
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+
+    const questionEl = document.getElementById("question");
+    const optionsEl = document.getElementById("options");
+    const nextBtn = document.getElementById("nextBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const resultEl = document.getElementById("result");
+
+    function loadQuestion() {
+      const currentQuiz = quizData[currentQuestion];
+      questionEl.textContent = `Q${currentQuestion + 1}. ${currentQuiz.question}`;
+      optionsEl.innerHTML = "";
+      nextBtn.style.display = "none";
+      submitBtn.style.display = "none";
+      currentQuiz.options.forEach(option => {
+        const button = document.createElement("button");
+        button.textContent = option;
+        button.classList.add("option");
+        button.onclick = () => {
+          Array.from(optionsEl.children).forEach(btn => {
+            btn.classList.remove("selected");
+            btn.disabled = true;
+          });
+          button.classList.add("selected");
+          if (option === currentQuiz.answer) {
+            score++;
+          }
+          if (currentQuestion < quizData.length - 1) {
+            nextBtn.style.display = "inline-block";
+          } else {
+            submitBtn.style.display = "inline-block";
+          }
+        };
+        optionsEl.appendChild(button);
+      });
+    }
+
+    nextBtn.onclick = () => {
+      currentQuestion++;
+      loadQuestion();
+    };
+
+    submitBtn.onclick = () => {
+      resultEl.textContent = `Quiz finished! Your score: ${score}/${quizData.length}`;
+      submitBtn.style.display = "none";
+      optionsEl.innerHTML = "";
+      questionEl.textContent = "";
+      nextBtn.style.display = "none";
+    };
+
+    loadQuestion();
+
+    // Joke API section
+    const getJokeBtn = document.getElementById("getJokeBtn");
+    const jokeDisplay = document.getElementById("jokeDisplay");
+
+    const meaningfulJokes = [
+      { text: "Why don't scientists trust atoms? Because they make up everything!", emoji: "⚛️😂" },
+      { text: "Why did the math book look sad? Because it had too many problems.", emoji: "📘😢" },
+      { text: "Why do programmers prefer dark mode? Because light attracts bugs.", emoji: "💻🌙🐛" },
+      { text: "Why was the computer cold? It left its Windows open.", emoji: "🖥️🥶🪟" }
+    ];
+
+    getJokeBtn.onclick = () => {
+      const randomIndex = Math.floor(Math.random() * meaningfulJokes.length);
+      const joke = meaningfulJokes[randomIndex];
+      jokeDisplay.textContent = ` ${joke.text}${joke.emoji} `;
+    };
+  </script>
+</body>
+</html>
